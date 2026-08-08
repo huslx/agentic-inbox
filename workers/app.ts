@@ -71,8 +71,11 @@ app.use("*", async (c, next) => {
 			issuer,
 			audience: POLICY_AUD,
 		});
-	} catch {
-		return c.text("Invalid or expired Access token", 403);
+	} catch (error) {
+		return c.text(
+			error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+			403,
+		);
 	}
 
 	// Authorization model note: once a teammate passes the shared Cloudflare
