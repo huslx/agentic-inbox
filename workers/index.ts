@@ -334,6 +334,42 @@ app.get("/api/v1/mailboxes/:mailboxId/emails/:emailId/attachments/:attachmentId"
 // -- Receive inbound email ------------------------------------------
 
 const MAX_EMAIL_SIZE = 25 * 1024 * 1024;
+const webhookEncoder = new TextEncoder();
+
+function bytesToHex(bytes: ArrayBuffer) {
+	return [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function notifyMailReceived(env: Env, mailbox: string, emailId: string) {
+	if (!env.MAIL_WEBHOOK_URL || !env.INBOX_WEBHOOK_SECRET || env.INBOX_WEBHOOK_SECRET.length < 32) {
+		throw new Error("Mail webhook is not configured");
+	}
+
+	const body = JSON.stringify({ mailbox, emailId });
+	const timestamp = Math.floor(Date.now() / 1000).toString();
+	const key = await crypto.subtle.importKey(
+		"raw",
+		webhookEncoder.encode(env.INBOX_WEBHOOK_SECRET),
+		{ name: "HMAC", hash: "SHA-256" },
+		false,
+		["sign"],
+	);
+	const signature = bytesToHex(await crypto.subtle.sign(
+		"HMAC",
+		key,
+		webhookEncoder.encode(`${timestamp}.${body}`),
+	));
+	const response = await fetch(env.MAIL_WEBHOOK_URL, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			"X-Inbox-Timestamp": timestamp,
+			"X-Inbox-Signature": `v1=${signature}`,
+		},
+		body,
+	});
+	if (!response.ok) throw new Error(`Mail webhook returned ${response.status}`);
+}
 
 async function streamToArrayBuffer(stream: ReadableStream, streamSize: number) {
 	if (streamSize > MAX_EMAIL_SIZE) throw new Error(`Email too large: ${streamSize} bytes exceeds ${MAX_EMAIL_SIZE} byte limit`);
@@ -416,6 +452,12 @@ async function receiveEmail(event: ForwardableEmailMessage, env: Env, ctx: Execu
 		method: "POST", headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({ mailboxId, emailId: messageId, sender: (parsedEmail.from?.address || "").toLowerCase(), subject: parsedEmail.subject || "", threadId }),
 	})).catch((e) => console.error("Auto-draft trigger failed:", (e as Error).message)));
+	ctx.waitUntil(notifyMailReceived(env, mailboxId, messageId).catch((e) => {
+		console.error(JSON.stringify({
+			message: "Mail webhook failed",
+			error: e instanceof Error ? e.message : String(e),
+		}));
+	}));
 }
 
 export { app, receiveEmail };

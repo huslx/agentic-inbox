@@ -15,7 +15,8 @@
 		"DOMAINS": "xingjuantech.com",
 		"EMAIL_ADDRESSES": [],
 		"POLICY_AUD": "b33af0051ec0799a22b49c6a4cb6b5c8edfe0bae83418a44bcf4ccdc6368bc84",
-		"TEAM_DOMAIN": "https://damp-glade-1424.cloudflareaccess.com"
+		"TEAM_DOMAIN": "https://damp-glade-1424.cloudflareaccess.com",
+		"MAIL_WEBHOOK_URL": "https://mail.xingjuantech.com/api/internal/inbox-events"
 	},
 	"send_email": [
 		{

@@ -61,6 +61,7 @@ npm run dev
 
 1. Set your domain in `wrangler.jsonc`
 2. Create an R2 bucket named `agentic-inbox`: `wrangler r2 bucket create agentic-inbox`
+3. Set `INBOX_WEBHOOK_SECRET` to the same random 32+ character value used by xj-mail: `npx wrangler secret put INBOX_WEBHOOK_SECRET`
 
 ### Deploy
 
