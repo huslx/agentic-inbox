@@ -399,6 +399,7 @@ async function receiveEmail(event: ForwardableEmailMessage, env: Env, ctx: Execu
 		return;
 	}
 
+	const toRecipients = (parsedEmail.to || []).map((e) => e.address?.toLowerCase()).filter(Boolean) as string[];
 	const ccRecipients = (parsedEmail.cc || []).map((e) => e.address?.toLowerCase()).filter(Boolean) as string[];
 	const bccRecipients = (parsedEmail.bcc || []).map((e) => e.address?.toLowerCase()).filter(Boolean) as string[];
 
@@ -439,7 +440,7 @@ async function receiveEmail(event: ForwardableEmailMessage, env: Env, ctx: Execu
 
 	await stub.createEmail(Folders.INBOX, {
 		id: messageId, subject: parsedEmail.subject || "",
-		sender: (parsedEmail.from?.address || event.from).toLowerCase(), recipient: mailboxId,
+		sender: (parsedEmail.from?.address || event.from).toLowerCase(), recipient: toRecipients.join(", ") || mailboxId,
 		cc: ccRecipients.join(", ") || null, bcc: bccRecipients.join(", ") || null,
 		date: new Date().toISOString(), // uses receive time, not the email's Date header
 		body: parsedEmail.html || parsedEmail.text || "",
