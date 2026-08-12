@@ -53,7 +53,7 @@ interface SearchFilterOptions {
 	query: string;
 	folder?: string;
 	from?: string;
-	to?: string;
+	to?: string | string[];
 	subject?: string;
 	date_start?: string;
 	date_end?: string;
@@ -683,7 +683,13 @@ export class MailboxDO extends DurableObject<Env> {
 			conditions.push(`${prefix}folder_id = (SELECT id FROM folders WHERE name = ${p} OR id = ${p} LIMIT 1)`);
 		}
 		if (from) { const p = addParam(`%${from}%`); conditions.push(`${prefix}sender LIKE ${p}`); }
-		if (to) { const p = addParam(`%${to}%`); conditions.push(`(${prefix}recipient LIKE ${p} OR ${prefix}cc LIKE ${p} OR ${prefix}bcc LIKE ${p})`); }
+		const recipients = (Array.isArray(to) ? to : to ? [to] : []).filter(Boolean);
+		if (recipients.length) {
+			conditions.push(`(${recipients.map((recipient) => {
+				const p = addParam(`%${recipient}%`);
+				return `(${prefix}recipient LIKE ${p} OR ${prefix}cc LIKE ${p} OR ${prefix}bcc LIKE ${p})`;
+			}).join(" OR ")})`);
+		}
 		if (subject) { const p = addParam(`%${subject}%`); conditions.push(`${prefix}subject LIKE ${p}`); }
 		if (date_start) { const p = addParam(date_start); conditions.push(`${prefix}date >= ${p}`); }
 		if (date_end) { const p = addParam(date_end); conditions.push(`${prefix}date <= ${p}`); }
