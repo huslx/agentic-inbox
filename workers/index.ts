@@ -341,12 +341,12 @@ function bytesToHex(bytes: ArrayBuffer) {
 	return [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-async function notifyMailReceived(env: Env, mailbox: string, emailId: string) {
+async function notifyMailReceived(env: Env, mailbox: string, emailId: string, sender: string, subject: string, body: string) {
 	if (!env.MAIL_WEBHOOK_URL || !env.INBOX_WEBHOOK_SECRET || env.INBOX_WEBHOOK_SECRET.length < 32) {
 		throw new Error("Mail webhook is not configured");
 	}
 
-	const body = JSON.stringify({ mailbox, emailId });
+	const payload = JSON.stringify({ mailbox, emailId, sender, subject, body });
 	const timestamp = Math.floor(Date.now() / 1000).toString();
 	const key = await crypto.subtle.importKey(
 		"raw",
@@ -358,7 +358,7 @@ async function notifyMailReceived(env: Env, mailbox: string, emailId: string) {
 	const signature = bytesToHex(await crypto.subtle.sign(
 		"HMAC",
 		key,
-		webhookEncoder.encode(`${timestamp}.${body}`),
+		webhookEncoder.encode(`${timestamp}.${payload}`),
 	));
 	const response = await fetch(env.MAIL_WEBHOOK_URL, {
 		method: "POST",
@@ -367,7 +367,7 @@ async function notifyMailReceived(env: Env, mailbox: string, emailId: string) {
 			"X-Inbox-Timestamp": timestamp,
 			"X-Inbox-Signature": `v1=${signature}`,
 		},
-		body,
+		body: payload,
 	});
 	if (!response.ok) throw new Error(`Mail webhook returned ${response.status}`);
 }
@@ -454,7 +454,14 @@ async function receiveEmail(event: ForwardableEmailMessage, env: Env, ctx: Execu
 		method: "POST", headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({ mailboxId, emailId: messageId, sender: (parsedEmail.from?.address || "").toLowerCase(), subject: parsedEmail.subject || "", threadId }),
 	})).catch((e) => console.error("Auto-draft trigger failed:", (e as Error).message)));
-	ctx.waitUntil(notifyMailReceived(env, mailboxId, messageId).catch((e) => {
+	ctx.waitUntil(notifyMailReceived(
+		env,
+		mailboxId,
+		messageId,
+		(parsedEmail.from?.address || "").toLowerCase(),
+		parsedEmail.subject || "",
+		parsedEmail.html || parsedEmail.text || "",
+	).catch((e) => {
 		console.error(JSON.stringify({
 			message: "Mail webhook failed",
 			error: e instanceof Error ? e.message : String(e),
