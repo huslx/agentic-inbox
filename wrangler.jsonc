@@ -12,7 +12,7 @@
 	"vars": {
 		// Cloudflare Access audience and team URL are public metadata.
 		// Keep them here so automated deploys cannot restore stale dashboard values.
-		"DOMAINS": "xingjuantech.com",
+		"DOMAINS": "xingjuantech.com,miaooo.cc,ideatack.com",
 		"EMAIL_ADDRESSES": [],
 		"POLICY_AUD": "b33af0051ec0799a22b49c6a4cb6b5c8edfe0bae83418a44bcf4ccdc6368bc84",
 		"TEAM_DOMAIN": "https://damp-glade-1424.cloudflareaccess.com",
