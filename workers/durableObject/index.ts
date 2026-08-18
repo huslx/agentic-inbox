@@ -685,10 +685,13 @@ export class MailboxDO extends DurableObject<Env> {
 		if (from) { const p = addParam(`%${from}%`); conditions.push(`${prefix}sender LIKE ${p}`); }
 		const recipients = (Array.isArray(to) ? to : to ? [to] : []).filter(Boolean);
 		if (recipients.length) {
-			conditions.push(`(${recipients.map((recipient) => {
-				const p = addParam(`%${recipient}%`);
-				return `(${prefix}recipient LIKE ${p} OR ${prefix}cc LIKE ${p} OR ${prefix}bcc LIKE ${p})`;
-			}).join(" OR ")})`);
+			const p = addParam(JSON.stringify(recipients));
+			conditions.push(`EXISTS (
+				SELECT 1 FROM json_each(${p}) AS recipient_filter
+				WHERE ${prefix}recipient LIKE '%' || recipient_filter.value || '%'
+					OR ${prefix}cc LIKE '%' || recipient_filter.value || '%'
+					OR ${prefix}bcc LIKE '%' || recipient_filter.value || '%'
+			)`);
 		}
 		if (subject) { const p = addParam(`%${subject}%`); conditions.push(`${prefix}subject LIKE ${p}`); }
 		if (date_start) { const p = addParam(date_start); conditions.push(`${prefix}date >= ${p}`); }
