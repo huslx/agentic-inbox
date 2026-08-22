@@ -65,7 +65,8 @@ export async function processInboundEmail(raw: ArrayBuffer, envelopeFrom: string
 		message_id: parsed.messageId ? extractMessageId(parsed.messageId) : null,
 		raw_headers: JSON.stringify(parsed.headers),
 	}, attachments);
-	await notifyMailReceived({ mailbox: mailboxId, emailId: id, sender, subject: parsed.subject ?? "", body });
+	await notifyMailReceived({ mailbox: mailboxId, emailId: id, sender, subject: parsed.subject ?? "", body })
+		.catch((error) => console.error("Mail webhook failed:", error));
 }
 
 export function verifySmtpSecret(value = "") {
