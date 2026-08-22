@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+
+secret=$(cat /etc/postfix/agentic-inbox-secret)
+exec curl --fail --silent --show-error \
+	--header "X-SMTP-Secret: $secret" \
+	--header "X-Envelope-From: $1" \
+	--header "X-Envelope-To: $2" \
+	--data-binary @- \
+	http://127.0.0.1:18097/internal/smtp

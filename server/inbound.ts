@@ -1,4 +1,4 @@
-import { createHmac } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import PostalMime from "postal-mime";
 import { Folders } from "../shared/folders";
 import { createMailbox, getMailbox, MailboxStore } from "./db";
@@ -68,6 +68,13 @@ export async function processInboundEmail(raw: ArrayBuffer, envelopeFrom: string
 	await notifyMailReceived({ mailbox: mailboxId, emailId: id, sender, subject: parsed.subject ?? "", body });
 }
 
+export function verifySmtpSecret(value = "") {
+	const expected = process.env.SMTP_DELIVERY_SECRET;
+	if (!expected) return false;
+	const digest = (input: string) => createHash("sha256").update(input).digest();
+	return timingSafeEqual(digest(value), digest(expected));
+}
+
 let polling = false;
 
 export function startInboundPoller() {
@@ -89,4 +96,3 @@ export function startInboundPoller() {
 	void poll();
 	setInterval(poll, 30_000).unref();
 }
-

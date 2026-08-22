@@ -7,13 +7,20 @@ import { createRequestHandler } from "react-router";
 import { api } from "./api";
 import { requireAccess } from "./auth";
 import { initializeDatabase } from "./db";
-import { startInboundPoller } from "./inbound";
+import { processInboundEmail, startInboundPoller, verifySmtpSecret } from "./inbound";
 import { handleMcp } from "./mcp";
 
 await initializeDatabase();
 
 const app = new Hono();
 app.get("/health", (c) => c.json({ status: "ok" }));
+app.post("/internal/smtp", async (c) => {
+	if (!verifySmtpSecret(c.req.header("X-SMTP-Secret"))) return c.text("Forbidden", 403);
+	const from = c.req.header("X-Envelope-From") ?? "";
+	const to = c.req.header("X-Envelope-To") ?? "";
+	await processInboundEmail(await c.req.arrayBuffer(), from, to);
+	return c.text("Accepted", 202);
+});
 app.use("*", requireAccess);
 app.all("/mcp", (c) => handleMcp(c.req.raw));
 app.route("/", api);
