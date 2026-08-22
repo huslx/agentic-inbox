@@ -1,0 +1,12 @@
+[Unit]
+Description=Import Agentic Inbox data from Cloudflare Durable Objects
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/opt/agentic-inbox
+EnvironmentFile=/etc/agentic-inbox.env
+EnvironmentFile=/etc/agentic-inbox-migration.env
+Environment=MIGRATION_URL=https://agentic-inbox-export.ljzhouo.workers.dev
+ExecStart=/usr/bin/npm run migrate

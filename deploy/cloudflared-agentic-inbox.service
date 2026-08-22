@@ -1,0 +1,14 @@
+[Unit]
+Description=Cloudflare Tunnel for Agentic Inbox
+After=network-online.target agentic-inbox.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/cloudflared tunnel --no-autoupdate run --token-file /etc/cloudflared/agentic-inbox.token
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+

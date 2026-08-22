@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the one-time Agentic Inbox data migration after Workers quota resets
+
+[Timer]
+OnCalendar=2026-08-23 00:05:00 UTC
+Persistent=true
+Unit=agentic-inbox-migrate.service
+
+[Install]
+WantedBy=timers.target
+

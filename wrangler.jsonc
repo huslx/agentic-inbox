@@ -2,22 +2,13 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "agentic-inbox",
 	"compatibility_date": "2025-11-28",
-	"main": "./workers/app.ts",
+	"main": "./workers/mail-gateway.ts",
 	"observability": {
 		"enabled": true
 	},
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
-	"vars": {
-		// Cloudflare Access audience and team URL are public metadata.
-		// Keep them here so automated deploys cannot restore stale dashboard values.
-		"DOMAINS": "xingjuantech.com,miaooo.cc,edu.miaooo.cc,ideatack.com",
-		"EMAIL_ADDRESSES": [],
-		"POLICY_AUD": "b33af0051ec0799a22b49c6a4cb6b5c8edfe0bae83418a44bcf4ccdc6368bc84",
-		"TEAM_DOMAIN": "https://damp-glade-1424.cloudflareaccess.com",
-		"MAIL_WEBHOOK_URL": "https://mail.xingjuantech.com/api/internal/inbox-events"
-	},
 	"send_email": [
 		{
 			"name": "EMAIL",
@@ -29,45 +20,6 @@
 			"binding": "BUCKET",
 			"bucket_name": "agentic-inbox",
 			"preview_bucket_name": "agentic-inbox"
-		}
-	],
-	"ai": {
-		"binding": "AI"
-	},
-	"durable_objects": {
-		"bindings": [
-			{
-				"name": "MAILBOX",
-				"class_name": "MailboxDO"
-			},
-			{
-				"name": "EMAIL_AGENT",
-				"class_name": "EmailAgent"
-			},
-			{
-				"name": "EMAIL_MCP",
-				"class_name": "EmailMCP"
-			}
-		]
-	},
-	"migrations": [
-		{
-			"tag": "v1",
-			"new_sqlite_classes": [
-				"MailboxDO"
-			]
-		},
-		{
-			"tag": "v2",
-			"new_sqlite_classes": [
-				"EmailAgent"
-			]
-		},
-		{
-			"tag": "v3",
-			"new_sqlite_classes": [
-				"EmailMCP"
-			]
 		}
 	]
 }

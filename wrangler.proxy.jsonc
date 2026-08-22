@@ -1,0 +1,8 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "agentic-inbox",
+	"main": "./workers/proxy.ts",
+	"compatibility_date": "2025-11-28",
+	"observability": { "enabled": true }
+}
+

@@ -18,12 +18,13 @@ import {
 	StopIcon,
 	PencilSimpleIcon,
 } from "@phosphor-icons/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useUIStore } from "~/hooks/useUIStore";
-import type { UIMessage } from "ai";
+import { DefaultChatTransport, type UIMessage } from "ai";
+import { useChat } from "@ai-sdk/react";
 
 const TOOL_LABELS: Record<string, { label: string; icon: React.ReactNode }> = {
 	list_emails: {
@@ -295,21 +296,21 @@ function MessageBubble({
 
 function AgentChatConnected({
 	mailboxId,
-	useAgent,
-	useAgentChat,
 }: {
 	mailboxId: string;
-	useAgent: typeof import("agents/react").useAgent;
-	useAgentChat: typeof import("@cloudflare/ai-chat/react").useAgentChat;
 }) {
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLTextAreaElement>(null);
 	const [inputValue, setInputValue] = useState("");
 	const { startCompose } = useUIStore();
 
-	const agent = useAgent({ agent: "EmailAgent", name: mailboxId });
-	const { messages, sendMessage, status, setMessages, stop } =
-		useAgentChat({ agent });
+	const transport = useMemo(() => new DefaultChatTransport({
+		api: `/api/v1/mailboxes/${encodeURIComponent(mailboxId)}/chat`,
+	}), [mailboxId]);
+	const { messages, sendMessage, status, setMessages, stop } = useChat({
+		id: mailboxId,
+		transport,
+	});
 	const isStreaming = status === "streaming" || status === "submitted";
 
 	useEffect(() => {
@@ -422,9 +423,9 @@ function AgentChatConnected({
 										for (const part of msg.parts) {
 											if (
 												(part as any).toolName === "draft_reply" &&
-												(part as any).result
+												((part as any).output || (part as any).result)
 											) {
-												draftData = (part as any).result;
+												draftData = (part as any).output || (part as any).result;
 												break;
 											}
 										}
@@ -523,52 +524,5 @@ function AgentChatConnected({
 
 export default function AgentPanel() {
 	const { mailboxId } = useParams<{ mailboxId: string }>();
-	const [hooks, setHooks] = useState<{
-		useAgent: typeof import("agents/react").useAgent;
-		useAgentChat: typeof import("@cloudflare/ai-chat/react").useAgentChat;
-	} | null>(null);
-
-	const [loadError, setLoadError] = useState<string | null>(null);
-
-	useEffect(() => {
-		Promise.all([
-			import("agents/react"),
-			import("@cloudflare/ai-chat/react"),
-		]).then(([a, c]) =>
-			setHooks({
-				useAgent: a.useAgent,
-				useAgentChat: c.useAgentChat,
-			}),
-		).catch((err) => {
-			console.error("Failed to load agent modules:", err);
-			setLoadError("Failed to connect to agent. Reload to retry.");
-		});
-	}, []);
-
-	if (loadError) {
-		return (
-			<div className="flex flex-col items-center justify-center h-full gap-2 px-4 text-center">
-				<span className="text-xs text-kumo-error">{loadError}</span>
-			</div>
-		);
-	}
-
-	if (!hooks) {
-		return (
-			<div className="flex flex-col items-center justify-center h-full gap-2">
-				<Loader size="base" />
-				<span className="text-xs text-kumo-subtle">
-					Connecting...
-				</span>
-			</div>
-		);
-	}
-
-	return (
-		<AgentChatConnected
-			mailboxId={mailboxId ?? "default"}
-			useAgent={hooks.useAgent}
-			useAgentChat={hooks.useAgentChat}
-		/>
-	);
+	return <AgentChatConnected mailboxId={mailboxId ?? "default"} />;
 }

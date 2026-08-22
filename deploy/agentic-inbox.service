@@ -1,0 +1,19 @@
+[Unit]
+Description=Agentic Inbox
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/agentic-inbox
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/agentic-inbox.env
+EnvironmentFile=/etc/agentic-inbox-gateway.env
+EnvironmentFile=-/etc/agentic-inbox-webhook.env
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
